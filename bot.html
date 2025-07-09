@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assistant d'Inscription</title>
+    <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+    <style>
+        body {
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 400px;
+            height: 600px;
+            background: #2d2d2d;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #202020;
+            padding: 20px;
+            border-bottom: 2px solid #00ffc8;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            color: #00ffc8;
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .chat-messages {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .bot-message {
+            background: #333;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            max-width: 80%;
+            animation: fadeIn 0.5s ease-in;
+            position: relative;
+            border: 1px solid #404040;
+        }
+
+        .bot-message::after {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 15px;
+            border-width: 5px 10px 5px 0;
+            border-style: solid;
+            border-color: transparent #333 transparent transparent;
+        }
+
+        .user-input {
+            display: flex;
+            padding: 20px;
+            background: #202020;
+            border-top: 2px solid #00ffc8;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background: #333;
+            color: #fff;
+            margin-right: 10px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            box-shadow: 0 0 10px rgba(0, 255, 200, 0.3);
+        }
+
+        button {
+            background: #00ffc8;
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 200, 0.5);
+        }
+
+        .progress-bar {
+            height: 3px;
+            background: #333;
+            margin: 10px 20px;
+            border-radius: 2px;
+        }
+
+        .progress {
+            height: 100%;
+            background: #00ffc8;
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 2px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-indicator {
+            text-align: center;
+            color: #00ffc8;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .chat-header img{
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .chat-header p {
+            flex: 1;
+            margin: 0;
+            font-size: 12px;
+            color: rgb(6, 228, 228);
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+                <img id="profile-picture" src="img/logo.jpeg" alt="Profile Picture">
+                    <p>En ligne <span>&#9679;</span></p>
+            <h1>Assistant d'Inscription 🔒</h1>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages"></div>
+        
+        <div class="user-input">
+            <input type="text" id="userInput" placeholder="Écrivez votre réponse...">
+            <button onclick="processInput()">Envoyer</button>
+        </div>
+    </div>
+
+    <script>
+        const registrationSteps = [
+            {
+                question: "Bienvenue ! Commençons votre inscription. Quel est votre nom complet ?",
+                type: "text",
+                field: "name"
+            },
+            {
+                question: "Parfait ! Maintenant, quelle est votre adresse email ?",
+                type: "email",
+                field: "email"
+            },
+            {
+                question: "Créez maintenant un mot de passe sécurisé :",
+                type: "password",
+                field: "password"
+            },
+            {
+                question: "Confirmez votre mot de passe :",
+                type: "password",
+                field: "confirmPassword"
+            },
+            {
+                question: "Dernière étape ! Quelle est votre date de naissance ?",
+                type: "date",
+                field: "birthdate"
+            }
+        ];
+
+        let currentStep = 0;
+        let userData = {};
+
+        function displayBotMessage(message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'bot-message';
+            messageDiv.innerHTML = `
+                <div class="step-indicator">Étape ${currentStep + 1}/${registrationSteps.length}</div>
+                ${message}
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Mise à jour de la barre de progression
+            const progress = (currentStep / (registrationSteps.length - 1)) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function processInput() {
+            const input = document.getElementById('userInput');
+            const value = input.value.trim();
+            
+            if (!value) return;
+
+            // Validation des données
+            const currentField = registrationSteps[currentStep].field;
+            if (currentField === 'email' && !validateEmail(value)) {
+                displayBotMessage("⚠️ Adresse email invalide. Veuillez réessayer.");
+                return;
+            }
+
+            if (currentField === 'confirmPassword' && value !== userData.password) {
+                displayBotMessage("⚠️ Les mots de passe ne correspondent pas. Veuillez réessayer.");
+                return;
+            }
+
+            userData[currentField] = value;
+            input.value = '';
+            
+            if (currentStep < registrationSteps.length - 1) {
+                currentStep++;
+                showNextStep();
+            } else {
+                completeRegistration();
+            }
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function showNextStep() {
+            const step = registrationSteps[currentStep];
+            displayBotMessage(step.question);
+            document.getElementById('userInput').type = step.type;
+        }
+
+        function completeRegistration() {
+            document.getElementById('userInput').style.display = 'none';
+            document.querySelector('button').style.display = 'none';
+            
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML += `
+                <div class="bot-message" style="background: #004d40; color: #00ffc8;">
+                    ✅ Inscription réussie !<br><br>
+                    Bienvenue ${userData.name} !<br>
+                    Votre compte a été créé avec succès.
+                </div>
+            `;
+            
+            // Enregistrement des données (à remplacer par un appel API en réel)
+            localStorage.setItem('userData', JSON.stringify(userData));
+        }
+
+        // Démarrage du processus
+        displayBotMessage(registrationSteps[0].question);
+    </script>
+</body>
+</html>

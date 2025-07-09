@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FacePay - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+    <style>
+        /* Système de Design */
+        :root {
+            --primary: #06d128;
+            --secondary: #2196F3;
+            --dark: #1A1A1A;
+            --light: #FFFFFF;
+            --success: #28A745;
+            --danger: #DC3545;
+            --warning: #FFC107;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+        }
+
+        /* Layout Principal */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+           
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: #2D2D2D;
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            border: 1px solid var(--primary);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            border-radius: 50px;
+        }
+
+        .logo-container h1{
+            color: var(--primary);
+        }
+
+
+        .nav-list {
+            list-style: none;
+           
+        }
+
+        .nav-item {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid var(--primary);
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--warning);
+        }
+
+        /* Contenu Principal */
+        .main-content {
+            padding: 2rem;
+            background: #252525;
+        }
+
+        /* Carte de Profil */
+        .profile-card {
+            background: #333;
+            padding: 2rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--primary);
+        }
+
+        .profile-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--primary);
+        }
+
+        .profile-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Statistiques */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+           
+        }
+
+        .stat-card {
+            background: #333;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--primary);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* Formulaire de Transaction */
+        .transaction-form {
+            max-width: 600px;
+            margin: 2rem auto;
+            background: #333;
+            padding: 2rem;
+            border-radius: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #252525;
+            color: var(--light);
+            border: 1px solid var(--primary);
+        }
+
+        /* Historique des Transactions */
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #333;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .transaction-table th,
+        .transaction-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--success);
+        }
+
+        .transaction-type {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .credit { background: var(--success); }
+        .debit { background: var(--danger); }
+
+        /* Reconnaissance Faciale */
+        .face-auth-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .camera-feed {
+            width: 400px;
+            height: 400px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .btn-secondary{
+            
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-grid">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="Index.html" class="flex flex-col items-center text-green-600 absolute" style="color: greenyellow; padding-left: 100px;" >
+                <i class="fas fa-home text-xl"></i>
+                <span class="text-xs mt-1">Accueil</span>
+            </a>
+            <a href="connexion.html" class="flex flex-col items-center text-green-600 absolute" style="color: greenyellow; padding-left: 100px;" >
+                <i class="fas fa-user text-indigo-600"></i>
+                <span class="text-xs mt-1">User</span>
+            </a><br>
+            
+            <div class="logo-container">
+                <img src="img/logo.jpeg" alt="Logo FacePay" class="logo">
+                <h1>FacePay</h1>
+            </div>
+
+
+            <nav>
+                <ul class="nav-list">
+                    <li class="nav-item" onclick="showSection('dashboard')">
+                        <i class="fas fa-home"></i> Tableau de bord
+                    </li>
+                    <li class="nav-item" onclick="showSection('transactions')">
+                        <i class="fas fa-exchange-alt"></i> Transactions
+                    </li>
+                    <li class="nav-item" onclick="showSection('security')">
+                        <i class="fas fa-shield-alt"></i> Sécurité
+                    </li>
+                    <li class="nav-item" onclick="showSection('settings')">
+                        <i class="fas fa-cog"></i> Paramètres
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Contenu Principal -->
+        <main class="main-content">
+            <!-- Section Tableau de Bord -->
+            <section id="dashboard" class="section">
+                <div class="profile-card">
+                    <div class="profile-photo">
+                        <img src="img/femme.webp" alt="Photo de profil" id="userPhoto">
+                    </div>
+                    <div>
+                        <h2 id="userName"> Akono Nkoa</h2>
+                        <p class="text-muted">narskynkoa2@gmail.com</p>
+                        <div class="balance">Solde: <span id="balanceAmount">10,000 XOF</span></div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Transactions ce mois</h3>
+                        <div class="stat-value">23</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Dépenses totales</h3>
+                        <div class="stat-value">450,000 XOF</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Revenus totaux</h3>
+                        <div class="stat-value">800,000 XOF</div>
+                    </div>
+                </div>
+
+                <h2>Activité Récente</h2>
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTransactions">
+                        <!-- Transactions dynamiques -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Section Transactions -->
+            <section id="transactions" class="section" style="display: none;">
+                <h1>Nouvelle Transaction</h1>
+                <form class="transaction-form" onsubmit="handleTransaction(event)">
+                    <div class="form-group">
+                        <label class="form-label">Type de transaction</label>
+                        <select class="form-input" id="transactionType">
+                            <option value="transfer">Transfert</option>
+                            <option value="deposit">Dépôt</option>
+                            <option value="withdraw">Retrait</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Destinataire</label>
+                        <input type="text" class="form-input" id="recipient" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Montant (XOF)</label>
+                        <input type="number" class="form-input" id="amount" required>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="padding: 0.7rem; color:#000000;
+                    background-color: #06d128; border-radius: 10px; border-color: #000000;
+                    font-size: large;" >
+                        <i class="fas fa-fingerprint"></i> Vérifier l'identité
+                    </button>
+                </form>
+            </section>
+
+            <!-- Section Sécurité -->
+            <section id="security" class="section" style="display: none;">
+                <h1>Sécurité</h1>
+                <div class="security-settings">
+                    <div class="security-item">
+                        <h3>Authentification à deux facteurs</h3>
+                        <button class="btn-secondary" style="padding: 0.7rem; color:#000000;
+                        background-color: #06d128; border-radius: 10px; border-color: #06d128;
+                        font-size: large;">Activer</button>
+                    </div>
+                    <div class="security-item">
+                        <h3></h3>
+                        <ul id="loginHistory"></ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Reconnaissance Faciale -->
+    <div id="faceAuthModal" class="face-auth-modal">
+        <h2>Vérification d'Identité</h2>
+        <div class="camera-feed">
+            <video id="cameraStream" autoplay></video>
+        </div>
+        <button class="btn-primary" onclick="captureFace()">
+            <i class="fas fa-camera"></i> Capturer
+        </button>
+    </div>
+
+    <script>
+        // État de l'application
+        let currentUser = {
+            name: "Jean Dupont",
+            balance: 0,
+            transactions: [
+                { date: "2023-08-01", type: "transfer", amount: 500, recipient: "Marie Diop" },
+                { date: "2023-08-02", type: "deposit", amount: 2000, sender: "SARL Tech" }
+            ]
+        };
+
+        // Gestion de l'interface
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(sectionId).style.display = 'block';
+        }
+
+        // Gestion des transactions
+        async function handleTransaction(event) {
+            event.preventDefault();
+            
+            const transactionType = document.getElementById('transactionType').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const recipient = document.getElementById('recipient').value;
+
+            if (!await verifyIdentity()) {
+                alert('Échec de la vérification d\'identité');
+                return;
+            }
+
+            // Exécuter la transaction
+            if (transactionType === 'transfert' || transactionType === 'withdraw') {
+                currentUser.balance -= amount;
+            } else {
+                currentUser.balance += amount;
+            }
+
+            currentUser.transactions.unshift({
+                date: new Date().toISOString(),
+                type: transactionType,
+                amount: amount,
+                recipient: recipient
+            });
+
+            updateUI();
+            alert('Transaction effectuée avec succès!');
+        }
+
+        // Vérification faciale
+        async function verifyIdentity() {
+            return new Promise(async (resolve) => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.getElementById('cameraStream');
+                    video.srcObject = stream;
+                    document.getElementById('faceAuthModal').style.display = 'block';
+
+                    // Simulation de vérification
+                    setTimeout(() => {
+                        stream.getTracks().forEach(track => track.stop());
+                        document.getElementById('faceAuthModal').style.display = 'none';
+                        resolve(true);
+                    }, 2000);
+                } catch (error) {
+                    alert('Erreur d\'accès à la caméra');
+                    resolve(false);
+                }
+            });
+        }
+
+        // Mise à jour de l'interface
+        function updateUI() {
+            // Mettre à jour le solde
+            document.getElementById('balanceAmount').textContent = 
+                currentUser.balance.toLocaleString('fr-FR') + ' XOF';
+
+            // Mettre à jour l'historique
+            const tbody = document.getElementById('recentTransactions');
+            tbody.innerHTML = currentUser.transactions.map(transaction => `
+                <tr>
+                    <td>${new Date(transaction.date).toLocaleDateString()}</td>
+                    <td>${transaction.type} à ${transaction.recipient}</td>
+                    <td>${transaction.amount.toLocaleString('fr-FR')} XOF</td>
+                    <td>
+                        <span class="transaction-type ${transaction.type}">
+                            ${transaction.type}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUI();
+            showSection('dashboard');
+        });
+    </script>
+</body>
+</html>

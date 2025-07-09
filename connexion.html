@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FacePay - Transfert Sécurisé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        
+        canvas#particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            padding: 20px;
+            border-radius: 10px;
+            width: 50%;
+            max-width: 400px;
+            border: 1px solid #4CAF50;
+            z-index: 1000;
+        }
+        
+        .modal input {
+            width: 100%;
+            padding: 5px;
+            margin: 8px 0;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: white;
+        }
+        
+        .modal button {
+            width: 100%;
+            padding: 5px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .photo-container {
+            width: 100px; 
+            height: 100px; 
+            border-radius: 50%; 
+            overflow: hidden;
+            margin: 20px auto; 
+            border: 3px solid #4CAF50; 
+            position: relative;
+        }
+        
+        #userPhoto, #photoPreview { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.9em;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        
+        .action-btn {
+            padding: 20px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            background: rgba(76, 175, 80, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .camera-btn {
+            display: block;
+            width: 100%;
+            margin: 7px 0;
+            padding: 10px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .input-group {
+            margin-bottom: 3px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 2px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+    
+    <header class="flex justify-between items-center p-5 bg-black bg-opacity-90 fixed w-full z-50">
+        <div class="flex items-center gap-3">
+            <img src="img/logo.jpeg" alt="Logo FacePay" class="w-12 h-12 rounded-full">
+            <span class="text-2xl font-bold text-green-500">FacePay</span>
+        </div>
+        <div class="flex gap-3">
+            <button class="px-4 py-2 rounded-full bg-blue-500 text-white font-semibold" onclick="UI.showModal('login')">Connexion</button>
+            <button class="px-4 py-2 rounded-full bg-orange-500 text-white font-semibold" onclick="UI.showModal('signup')">Inscription</button>
+        </div>
+    </header>
+    
+    <!-- Modals -->
+    <div id="signupModal" class="modal">
+        <span class="absolute top-4 right-4 text-xl cursor-pointer" onclick="UI.hideModals()">&times;</span>
+        <h2 class="text-center text-2xl mb-6">Inscription FacePay</h2>
+        <div class="photo-container">
+            <img id="photoPreview" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Preview">
+        </div>
+        <button onclick="activateCamera('signup')" class="camera-btn">
+            <i class="fas fa-camera mr-2"></i>Prendre une photo
+        </button>
+        <div class="input-group">
+            <label for="signupName">Nom complet</label>
+            <input type="text" id="signupName" required>
+            <div class="error-message" id="nameError"></div>
+        </div>
+        <div class="input-group">
+            <label for="signupEmail">Adresse email</label>
+            <input type="email" id="signupEmail" required>
+            <div class="error-message" id="emailError"></div>
+        </div>
+        <div class="input-group">
+            <label for="signupPassword">Mot de passe</label>
+            <input type="password" id="signupPassword" required>
+            <div class="error-message" id="passwordError"></div>
+        </div>
+        <button onclick="Auth.handleSignup()" class="mt-4">
+            <i class="fas fa-user-plus mr-2"></i>S'inscrire
+        </button>
+        <p class="text-center mt-4 text-gray-400">
+            Déjà un compte ? <a href="#" class="text-green-500" onclick="UI.showModal('login')">Se connecter</a>
+        </p>
+    </div>
+    
+    <div id="loginModal" class="modal">
+        <span class="absolute top-4 right-4 text-xl cursor-pointer" onclick="UI.hideModals()">&times;</span>
+        <h2 class="text-center text-2xl mb-6">Connexion FacePay</h2>
+        <div class="input-group">
+            <label for="loginEmail">Adresse email</label>
+            <input type="email" id="loginEmail" required>
+            <div class="error-message" id="loginEmailError"></div>
+        </div>
+        <div class="input-group">
+            <label for="loginPassword">Mot de passe</label>
+            <input type="password" id="loginPassword" required>
+            <div class="error-message" id="loginPasswordError"></div>
+        </div>
+        <button onclick="Auth.handleLogin()" class="mt-4">
+            <i class="fas fa-sign-in-alt mr-2"></i>Se connecter
+        </button>
+        <p class="text-center mt-4 text-gray-400">
+            <a href="#" class="text-green-500">Mot de passe oublié ?</a>
+        </p>
+    </div>
+    
+    <!-- Interface Utilisateur -->
+    <div id="userInterface" class="hidden pt-28 px-5">
+        <a href="Index.html" class="flex flex-col items-center text-white-600 absolute" style="color: greenyellow;">
+            <i class="fas fa-home text-xl"></i>
+            <span class="text-xs mt-1">Accueil</span>
+        </a>
+        <div class="profile-section text-center">
+            <div class="photo-container mx-auto">
+                <img id="userPhoto" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Profil">
+                <input type="file" id="fileInput" hidden accept="image/*">
+            </div>
+            <button onclick="document.getElementById('fileInput').click()" class="px-4 py-2 bg-blue-500 text-white rounded-full mt-3">
+                <i class="fas fa-camera mr-2"></i>Modifier Photo
+            </button>
+            <h2 id="userName" class="text-xl font-bold mt-4"></h2>
+            <div class="text-xl mt-2">
+                Solde: <span id="userBalance" class="text-green-500">0 XOF</span>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mt-10">
+            <button class="action-btn" onclick="Transaction.show('deposit')">
+                <a href="mode paiement.html" class="flex flex-col items-center text-white-500">
+                    <i class="fas fa-money-bill-wave mr-2"></i>
+                    <span class="text-xs mt-1"> Dépôt</span>
+                </a> 
+            </button>
+            <button class="action-btn" onclick="Transaction.show('withdraw')">
+                <a href="mode paiement.html" class="flex flex-col items-center text-white-500">
+                    <i class="fas fa-wallet mr-2"></i>
+                    <span class="text-xs mt-1"> Retrait</span>
+                </a>  
+    
+            </button>
+            <button class="action-btn">
+                <a href="transaction.html" class="flex flex-col items-center text-white-500">
+                    <i class="fas fa-exchange-alt text-xl"></i>
+                    <span class="text-xs mt-1">Transactions</span>
+                </a> 
+            </button>
+            <button class="action-btn" onclick="UI.show()">
+                <a href="bordUser.html" class="flex flex-col items-center text-white-500">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="text-xs mt-1">Statistiques</span>
+                </a>    
+            </button>        
+
+        </div>
+    </div>
+    
+    <script>
+        // Gestionnaire d'utilisateurs
+        class UserManager {
+            constructor() {
+                const storedUsers = localStorage.getItem('users');
+                this.users = storedUsers ? new Map(JSON.parse(storedUsers)) : new Map();
+            }
+            
+            saveUser(user) {
+                this.users.set(user.email, user);
+                localStorage.setItem('users', JSON.stringify([...this.users]));
+                return user;
+            }
+            
+            getUser(email) {
+                return this.users.get(email);
+            }
+            
+            emailExists(email) {
+                return this.users.has(email);
+            }
+        }
+        
+        // Système d'authentification
+        const Auth = {
+            userManager: new UserManager(),
+            currentUser: null,
+            
+            async hashPassword(password) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(password);
+                const hash = await crypto.subtle.digest('SHA-256', data);
+                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            },
+            
+            async handleSignup() {
+                const name = document.getElementById('signupName').value.trim();
+                const email = document.getElementById('signupEmail').value.trim();
+                const password = document.getElementById('signupPassword').value;
+                
+                // Validation
+                if (!this.validateSignup(name, email, password)) return;
+                
+                // Hachage mot de passe
+                const hashedPassword = await this.hashPassword(password);
+                
+                const user = {
+                    name,
+                    email,
+                    password: hashedPassword,
+                    photo: document.getElementById('photoPreview').src,
+                    balance: 5000,
+                    transactions: []
+                };
+                
+                this.userManager.saveUser(user);
+                this.currentUser = user;
+                UI.showUserInterface(user);
+                UI.hideModals();
+            },
+            
+            validateSignup(name, email, password) {
+                let valid = true;
+                
+                // Reset errors
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                if (name.length < 3) {
+                    UI.showError('nameError', 'Nom trop court (min 3 caractères)');
+                    valid = false;
+                }
+                
+                if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+                    UI.showError('emailError', 'Format email invalide');
+                    valid = false;
+                }
+                
+                if (this.userManager.emailExists(email)) {
+                    UI.showError('emailError', 'Cet email est déjà utilisé');
+                    valid = false;
+                }
+                
+                if (password.length < 8) {
+                    UI.showError('passwordError', '8 caractères minimum requis');
+                    valid = false;
+                }
+                
+                return valid;
+            },
+            
+            async handleLogin() {
+                const email = document.getElementById('loginEmail').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                
+                // Reset errors
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                const user = this.userManager.getUser(email);
+                
+                if (!user) {
+                    UI.showError('loginEmailError', 'Utilisateur non trouvé');
+                    return;
+                }
+                
+                const hashedPassword = await this.hashPassword(password);
+                
+                if (hashedPassword === user.password) {
+                    this.currentUser = user;
+                    UI.showUserInterface(user);
+                    UI.hideModals();
+                } else {
+                    UI.showError('loginPasswordError', 'Mot de passe incorrect');
+                }
+            }
+        };
+        
+        // Gestion de l'interface
+        const UI = {
+            showModal(type) {
+                document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+                document.getElementById(`${type}Modal`).style.display = 'block';
+            },
+            
+            hideModals() {
+                document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            },
+            
+            showError(elementId, message) {
+                const element = document.getElementById(elementId);
+                element.textContent = message;
+                element.style.display = 'block';
+            },
+            
+            showUserInterface(user) {
+                document.getElementById('userInterface').classList.remove('hidden');
+                document.getElementById('userName').textContent = user.name;
+                document.getElementById('userBalance').textContent = `${user.balance} XOF`;
+                document.getElementById('userPhoto').src = user.photo;
+                
+                // Setup photo update
+                document.getElementById('fileInput').onchange = function(e) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('userPhoto').src = e.target.result;
+                        Auth.currentUser.photo = e.target.result;
+                        Auth.userManager.saveUser(Auth.currentUser);
+                    };
+                    reader.readAsDataURL(file);
+                };
+            }
+        };
+        
+        // Système de transactions
+        const Transaction = {
+            show(type) { }
+        };
+        
+        // Historique
+        const History = {
+            show() { }
+        };
+        
+        // Animation des particules
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = Math.random() * 2 - 1;
+                this.vy = Math.random() * 2 - 1;
+                this.radius = Math.random() * 2;
+                this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+        
+        const particles = Array(100).fill().map(() => new Particle());
+        
+        function animateParticles() {
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            requestAnimationFrame(animateParticles);
+        }
+        
+        animateParticles();
+        
+        // Fonction pour activer la caméra
+        function activateCamera(type) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('La caméra n\'est pas disponible sur votre appareil');
+                return;
+            }
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    const takePhoto = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        const photo = canvas.toDataURL('image/png');
+                        
+                        if (type === 'signup') {
+                            document.getElementById('photoPreview').src = photo;
+                        }
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    setTimeout(takePhoto, 2000);
+                })
+                .catch(err => {
+                    console.error('Erreur caméra:', err);
+                    alert('Erreur d\'accès à la caméra: ' + err.message);
+                });
+        }
+    </script>
+</body>
+</html>

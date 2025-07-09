@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertisseur avec Validation Faciale</title>
+    <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #080808da;
+            
+        }
+
+        .converter {
+            background-color: rgba(70, 65, 65, 0.247);
+            padding: 30px;
+            border-radius: 10px;
+            border: 3px solid #4CAF50;
+            box-shadow: #4CAF50;
+        }
+
+        .converter h2{
+            color: #4CAF50;
+            height: 10%;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #videoContainer {
+            margin: 20px 0;
+            display: none;
+            text-align: center;
+        }
+
+        video {
+            width: 300px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .status-message {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+
+        #historyTable {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            display: none;
+        }
+
+        #historyTable th, #historyTable td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        #historyTable th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="converter">
+        <h2>💰 Transaction</h2>
+        
+        <div class="input-group">
+            <input type="number" id="amount" placeholder="Montant" step="0.01">
+            <select id="fromCurrency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+            </select>
+            → 
+            <select id="toCurrency">
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+            </select>
+        </div>
+
+        <button onclick="convertCurrency()" style="background-color: #6d9c6f; color: white;">Convertir</button>
+        
+        <div id="result" class="status-message"></div>
+        
+        <div id="videoContainer">
+            <video id="videoElement" autoplay playsinline></video>
+            <div id="cameraStatus" class="status-message"></div>
+        </div>
+
+        <input type="tel" id="phone" placeholder="Numéro du destinataire">
+
+        <div style="margin-top: 20px;">
+            <button onclick="validateTransaction()" style="background-color: #2196F3; color: white;">Valider la Transaction</button>
+            <button onclick="toggleHistory()" style="background-color: #9C27B0; color: white;">Historique</button>
+        </div>
+
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Montant</th>
+                    <th>À</th>
+                    <th>Résultat</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentConversion = null;
+        let stream = null;
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+        // Taux de change
+        const exchangeRates = {
+            USD: { EUR: 0.92, GBP: 0.79, JPY: 148.47, USD: 1 },
+            EUR: { USD: 1.09, GBP: 0.86, JPY: 161.48, EUR: 1 },
+            GBP: { USD: 1.27, EUR: 1.16, JPY: 187.54, GBP: 1 },
+            JPY: { USD: 0.0067, EUR: 0.0062, GBP: 0.0053, JPY: 1 }
+        };
+
+        function convertCurrency() {
+            const amountInput = document.getElementById('amount');
+            const resultDiv = document.getElementById('result');
+            
+            const amount = parseFloat(amountInput.value);
+            const from = document.getElementById('fromCurrency').value;
+            const to = document.getElementById('toCurrency').value;
+
+            if (!amount || amount <= 0) {
+                showMessage(resultDiv, "Veuillez entrer un montant valide", "error");
+                return;
+            }
+
+            const rate = exchangeRates[from][to];
+            const result = (amount * rate).toFixed(2);
+
+            currentConversion = {
+                amount: amount,
+                from: from,
+                to: phone,
+                result: result,
+                date: new Date().toLocaleString()
+            };
+
+            showMessage(resultDiv, `${amount} ${from} = ${result} ${to}`, "success");
+        }
+
+        async function validateTransaction() {
+            const statusDiv = document.getElementById('cameraStatus');
+            
+            if (!currentConversion) {
+                showMessage(statusDiv, "Effectuez d'abord une conversion", "error");
+                return;
+            }
+
+            try {
+                // Activation caméra
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('videoElement');
+                video.srcObject = stream;
+                document.getElementById('videoContainer').style.display = 'block';
+
+                // Simulation détection faciale
+                showMessage(statusDiv, "Détection faciale en cours...", "info");
+                
+                setTimeout(() => {
+                    if (Math.random() < 0.95) { // 95% de réussite
+                        handleValidationSuccess();
+                    } else {
+                        handleValidationError();
+                    }
+                    stopCamera();
+                }, 2000);
+
+            } catch (error) {
+                showMessage(statusDiv, "Accès caméra refusé", "error");
+                console.error("Erreur caméra:", error);
+            }
+        }
+
+        function handleValidationSuccess() {
+            transactions.push(currentConversion);
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+            showMessage(document.getElementById('result'), "Transaction validée ✅", "success");
+            currentConversion = null;
+        }
+
+        function handleValidationError() {
+            showMessage(document.getElementById('result'), "Échec de validation ❌", "error");
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                document.getElementById('videoContainer').style.display = 'none';
+            }
+        }
+
+        function toggleHistory() {
+            const table = document.getElementById('historyTable');
+            const tbody = document.getElementById('historyBody');
+            
+            tbody.innerHTML = transactions.map(transaction => `
+                <tr>
+                    <td>${transaction.date}</td>
+                    <td>${transaction.amount} ${transaction.from}</td>
+                    <td>${transaction.to}</td>
+                    <td>${transaction.result} ${transaction.to}</td>
+                </tr>
+            `).join('');
+            
+            table.style.display = table.style.display === 'none' ? 'table' : 'none';
+        }
+
+        function showMessage(element, text, type) {
+            element.style.display = 'block';
+            element.textContent = text;
+            element.style.backgroundColor = 
+                type === 'error' ? '#ffebee' :
+                type === 'success' ? '#e8f5e9' : '#e3f2fd';
+        }
+
+        // Initialisation
+        window.onload = () => {
+            if (transactions.length > 0) {
+                document.getElementById('historyTable').style.display = 'table';
+            }
+        };
+    </script>
+</body>
+</html>

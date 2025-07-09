@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Analytics</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --secondary: #2196F3;
+            --dark: #1A1A1A;
+            --light: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--light);
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .card {
+            background: #2D2D2D;
+            padding: 2rem;
+            border-radius: 16px;
+            position: relative;
+        }
+
+        .progress-circle {
+            width: 200px;
+            height: 200px;
+            margin: 1rem auto;
+            position: relative;
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #333;
+            stroke-width: 8;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 8;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            height: 400px;
+            margin: 2rem 0;
+        }
+
+        .transaction-form {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        input, select, button {
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            background: #333;
+            color: var(--light);
+        }
+
+        button {
+            background: var(--primary);
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <h1><i class="fas fa-chart-line"></i> Analytics Financiers</h1>
+        
+        <!-- Formulaire de transaction -->
+        <div class="transaction-form">
+            <input type="number" id="amount" placeholder="Montant (XOF)">
+            <select id="type">
+                <option value="deposit">Dépôt</option>
+                <option value="withdraw">Retrait</option>
+            </select>
+            <button onclick="addTransaction()"><i class="fas fa-plus"></i> Ajouter</button>
+        </div>
+
+        <!-- Grille de visualisation -->
+        <div class="grid">
+            <!-- Carte de progression -->
+            <div class="card">
+                <h2>Transactions ce mois</h2>
+                <div class="progress-circle">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="circle-bg" cx="50" cy="50" r="45"/>
+                        <circle class="circle-progress" cx="50" cy="50" r="45"/>
+                    </svg>
+                    <div class="percentage" id="percentage">0%</div>
+                </div>
+                <p>Objectif mensuel: 100 transactions</p>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="card">
+                <h2>Statistiques</h2>
+                <div class="stats">
+                    <div class="stat-item">
+                        <h3>Dépôts</h3>
+                        <p id="totalDeposit">0 XOF</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>Retraits</h3>
+                        <p id="totalWithdraw">0 XOF</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>Solde Net</h3>
+                        <p id="netAmount">0 XOF</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique principal -->
+        <div class="card">
+            <h2>Évolution des Transactions</h2>
+            <div class="chart-container">
+                <canvas id="transactionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let transactions = [];
+        let monthlyGoal = 100;
+        let chart;
+
+        // Configuration du graphique
+        function initChart() {
+            const ctx = document.getElementById('transactionChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 30}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Dépôts',
+                        data: [],
+                        borderColor: '#4CAF50',
+                        tension: 0.4
+                    }, {
+                        label: 'Retraits',
+                        data: [],
+                        borderColor: '#f44336',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' XOF';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Mise à jour du cercle de progression
+        function updateProgress() {
+            const percentage = (transactions.length / monthlyGoal * 100).toFixed(1);
+            const circle = document.querySelector('.circle-progress');
+            const radius = circle.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+            
+            circle.style.strokeDasharray = `${circumference}`;
+            circle.style.strokeDashoffset = `${circumference - (percentage / 100 * circumference)}`;
+            
+            document.getElementById('percentage').textContent = `${percentage}%`;
+        }
+
+        // Mise à jour des statistiques
+        function updateStats() {
+            const deposits = transactions.filter(t => t.type === 'deposit')
+                               .reduce((acc, t) => acc + t.amount, 0);
+            const withdrawals = transactions.filter(t => t.type === 'withdraw')
+                                .reduce((acc, t) => acc + t.amount, 0);
+            
+            document.getElementById('totalDeposit').textContent = `${deposits.toLocaleString()} XOF`;
+            document.getElementById('totalWithdraw').textContent = `${withdrawals.toLocaleString()} XOF`;
+            document.getElementById('netAmount').textContent = `${(deposits - withdrawals).toLocaleString()} XOF`;
+        }
+
+        // Ajout de transaction
+        function addTransaction() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
+            
+            if (!amount) return;
+            
+            transactions.push({
+                date: new Date(),
+                amount,
+                type
+            });
+
+            // Mise à jour du graphique
+            chart.data.datasets[type === 'deposit' ? 0 : 1].data.push(amount);
+            chart.update();
+            
+            updateProgress();
+            updateStats();
+            document.getElementById('amount').value = '';
+        }
+
+        // Initialisation
+        window.onload = initChart;
+    </script>
+</body>
+</html>

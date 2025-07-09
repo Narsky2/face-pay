@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Directives d'Inscription</title>
+    <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+    <style>
+        /* Réinitialisation CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+           
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            max-width: 180%;
+        }
+
+        .container {
+            background: #2d2d2d;
+            border-radius: 15px;
+            padding: 40px;
+            width: 100%;
+            max-width: 100%;
+            box-shadow: 0 0 30px rgba(0, 255, 200, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #00ffc8;
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .directive-container {
+            display: grid;
+            gap: 25px;
+        }
+
+        .directive-card {
+            background: #333333;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 4px solid #00ffc8;
+            opacity: 0;
+            transform: translateX(-50px);
+            animation: cardEntrance 3s forwards;
+        }
+
+        @keyframes cardEntrance {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .directive-number {
+            display: inline-block;
+            width: 35px;
+            height: 35px;
+            background: #00ffc8;
+            color: #1a1a1a;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .directive-title {
+            color: #00ffc8;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .directive-content {
+            color: #cccccc;
+            line-height: 1.6;
+            margin-left: 50px;
+            font-size: 1.5rem;
+        }
+
+        #startButton {
+            background: #00ffc8;
+            color: #1a1a1a;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 40px auto 0;
+            display: block;
+            transition: transform 0.3s;
+        }
+
+        #progressText {
+            text-align: center;
+            color: #00ffc8;
+            margin-top: 20px;
+        }
+
+        .logo {
+            width: 100px;
+            height: auto;
+            border-radius: 150px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            
+        }
+
+        .logo h1{
+            font-size: 2rem;
+        }
+
+        .container a{
+            position: absolute;
+            padding: 10%;
+            top: 10px;
+            right: 15px;
+            font-size: 3rem;
+            color: #35afe7;
+            
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="Index.html">retour</a>
+        <div class="logo">
+            <!-- Remplacez logo-facepay.png par votre fichier logo -->
+         <img src="img/logo.jpeg" alt="FacePay Logo" class="logo">
+         <h1>FacePay</h1>        
+        </div>
+        <div class="header">
+            <h1>Directives d'Inscription 🔐</h1>
+            <p id="progressText">Veuillez lire attentivement toutes les directives</p>
+        </div>
+
+        <div class="directive-container">
+            <div class="directive-card">
+                <span class="directive-number">1</span>
+                <span class="directive-title">Informations Requises</span>
+                <div class="directive-content">
+                    • Nom complet<br>
+                    • Adresse email valide<br>
+                    • profile-photo<br>
+                    • Mot de passe sécurisé
+                </div>
+            </div>
+
+            <div class="directive-card">
+                <span class="directive-number">2</span>
+                <span class="directive-title">Règles du Mot de Passe</span>
+                <div class="directive-content">
+                    • Minimum 8 caractères<br>
+                    • Au moins 1 majuscule<br>
+                    • Au moins 1 chiffre<br>
+                    • Caractère spécial (!@#$%^&*)
+                </div>
+            </div>
+
+            <div class="directive-card">
+                <span class="directive-number">3</span>
+                <span class="directive-title">Confidentialité</span>
+                <div class="directive-content">
+                    • Données chiffrées AES-256<br>
+                    • Aucun partage avec tiers<br>
+                    • Droit de suppression<br>
+                    • 2FA disponible
+                </div>
+            </div>
+        </div>
+
+        <button id="startButton" disabled>
+            Commencer l'Inscription 🚀
+        </button>
+    </div>
+
+    <script>
+        // Vérification de compatibilité
+        if(!window.IntersectionObserver || !window.Animation) {
+            alert("Veuillez utiliser un navigateur moderne (Chrome, Firefox, Edge)");
+        }
+
+        // Configuration de base
+        let readTime = 0;
+        const requiredReadTime = 10; // Secondes
+
+        // Éléments DOM
+        const startButton = document.getElementById('startButton');
+        const progressText = document.getElementById('progressText');
+        const cards = document.querySelectorAll('.directive-card');
+
+        // Timer de lecture
+        const timer = setInterval(() => {
+            readTime++;
+            progressText.textContent = `Lecture : ${Math.round((readTime/requiredReadTime)*100)}%`;
+            
+            if(readTime >= requiredReadTime) {
+                clearInterval(timer);
+                startButton.disabled = false;
+                progressText.textContent = "✓ Prêt à commencer !";
+            }
+        }, 1000);
+
+        // Gestion du clic
+        startButton.addEventListener('click', () => {
+            window.location.href = "connexion.html"; // Remplacez par votre URL
+        });
+
+        // Animation d'entrée
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 3}s`;
+        });
+    </script>
+</body>
+</html>
